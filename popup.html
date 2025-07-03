@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Shopee Auto Publisher</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Shopee Auto Publisher</h1>
+            <div class="logo">🛍️</div>
+        </div>
+        
+        <div class="content">
+            <div class="toggle-section">
+                <label class="switch">
+                    <input type="checkbox" id="autoPublishToggle">
+                    <span class="slider round"></span>
+                </label>
+                <span class="toggle-label">Auto Publish</span>
+            </div>
+            
+            <div class="status-section">
+                <div class="status-item">
+                    <span class="label">Status:</span>
+                    <span id="status" class="status-value off">OFF</span>
+                </div>
+                
+                <div class="status-item">
+                    <span class="label">Processed:</span>
+                    <span id="processed" class="count">0</span>
+                </div>
+                
+                <div class="status-item">
+                    <span class="label">Published:</span>
+                    <span id="published" class="count">0</span>
+                </div>
+                
+                <div class="status-item">
+                    <span class="label">Errors:</span>
+                    <span id="errors" class="count">0</span>
+                </div>
+            </div>
+            
+            <div class="progress-section">
+                <div class="progress-bar">
+                    <div id="progressBar" class="progress-fill"></div>
+                </div>
+                <div id="progressText" class="progress-text">Ready to start</div>
+            </div>
+            
+            <div class="logs-section">
+                <h3>Activity Log</h3>
+                <div id="logs" class="logs"></div>
+            </div>
+            
+            <div class="controls">
+                <button id="clearLogs" class="btn secondary">Clear Logs</button>
+                <button id="resetCounters" class="btn secondary">Reset Counters</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="completionModal" class="modal">
+        <div class="modal-content">
+            <h2>🎉 Processing Complete!</h2>
+            <p id="completionMessage"></p>
+            <button id="closeModal" class="btn primary">OK</button>
+        </div>
+    </div>
+    
+    <script src="popup.js"></script>
+</body>
+</html> 
