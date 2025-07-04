@@ -13,6 +13,24 @@
         </div>
         
         <div class="content">
+            <div class="settings-section">
+                <h3>Settings</h3>
+                <div class="domain-setting">
+                    <label for="domainSelect" class="setting-label">Shopee Domain:</label>
+                    <select id="domainSelect" class="domain-select">
+                        <option value="seller.shopee.ph">Philippines (seller.shopee.ph)</option>
+                        <option value="seller.shopee.com.my">Malaysia (seller.shopee.com.my)</option>
+                        <option value="seller.shopee.sg">Singapore (seller.shopee.sg)</option>
+                        <option value="seller.shopee.co.th">Thailand (seller.shopee.co.th)</option>
+                        <option value="seller.shopee.vn">Vietnam (seller.shopee.vn)</option>
+                        <option value="seller.shopee.co.id">Indonesia (seller.shopee.co.id)</option>
+                        <option value="seller.shopee.com.br">Brazil (seller.shopee.com.br)</option>
+                        <option value="custom">Custom Domain</option>
+                    </select>
+                    <input type="text" id="customDomain" class="custom-domain-input" placeholder="Enter custom domain (e.g., seller.shopee.com)" style="display: none;">
+                </div>
+            </div>
+            
             <div class="toggle-section">
                 <label class="switch">
                     <input type="checkbox" id="autoPublishToggle">

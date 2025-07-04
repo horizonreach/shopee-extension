@@ -131,8 +131,11 @@ class BackgroundService {
     }
 
     handleTabUpdate(tabId, tab) {
-        // Check if we're on the Shopee draft products page
-        if (tab.url.includes('seller.shopee.ph/portal/product/list/unpublished/draft')) {
+        // Check if we're on any Shopee seller domain
+        const isShopeeSellerDraft = /https:\/\/seller\.shopee\.[^\/]+\/portal\/product\/list\/unpublished\/draft/.test(tab.url);
+        const isShopeeSellerSite = /https:\/\/seller\.shopee\.[^\/]+/.test(tab.url);
+        
+        if (isShopeeSellerDraft) {
             // Set badge to indicate the extension is ready
             chrome.action.setBadgeText({
                 text: '●',
@@ -142,8 +145,8 @@ class BackgroundService {
                 color: '#4CAF50',
                 tabId: tabId
             });
-        } else if (tab.url.includes('seller.shopee.ph')) {
-            // On Shopee but wrong page
+        } else if (isShopeeSellerSite) {
+            // On Shopee seller site but wrong page
             chrome.action.setBadgeText({
                 text: '!',
                 tabId: tabId
@@ -153,7 +156,7 @@ class BackgroundService {
                 tabId: tabId
             });
         } else {
-            // Not on Shopee
+            // Not on Shopee seller site
             chrome.action.setBadgeText({
                 text: '',
                 tabId: tabId

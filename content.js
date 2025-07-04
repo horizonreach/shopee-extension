@@ -14,6 +14,7 @@ class ShopeeAutoPublisher {
         this.processedProducts = 0;
         this.capturedHeaders = {};
         this.isInitialized = false;
+        this.currentDomain = this.extractDomainFromUrl(window.location.href);
         
         this.initializeEventListeners();
         this.loadState();
@@ -40,7 +41,7 @@ class ShopeeAutoPublisher {
             const [url, options] = args;
             
             // If this is a Shopee API request, capture its headers
-            if (url.includes('seller.shopee.ph/api/')) {
+            if (url.includes(`${self.currentDomain}/api/`)) {
                 console.log('Intercepted Shopee API request:', url);
                 if (options && options.headers) {
                     console.log('Captured headers:', Object.keys(options.headers));
@@ -65,14 +66,14 @@ class ShopeeAutoPublisher {
         };
         
         XMLHttpRequest.prototype.setRequestHeader = function(name, value) {
-            if (this._url && this._url.includes('seller.shopee.ph/api/')) {
+            if (this._url && this._url.includes(`${self.currentDomain}/api/`)) {
                 this._headers[name] = value;
             }
             return originalXHRSetRequestHeader.apply(this, [name, value]);
         };
         
         XMLHttpRequest.prototype.send = function(...args) {
-            if (this._url && this._url.includes('seller.shopee.ph/api/') && this._headers) {
+            if (this._url && this._url.includes(`${self.currentDomain}/api/`) && this._headers) {
                 console.log('Intercepted XHR Shopee API request:', this._url);
                 console.log('Captured XHR headers:', Object.keys(this._headers));
                 self.capturedHeaders = { ...self.capturedHeaders, ...this._headers };
@@ -90,7 +91,7 @@ class ShopeeAutoPublisher {
             // Check if there are any existing fetch requests we can learn from
             const scripts = document.querySelectorAll('script');
             for (const script of scripts) {
-                if (script.textContent.includes('seller.shopee.ph/api/')) {
+                if (script.textContent.includes(`${this.currentDomain}/api/`)) {
                     // Try to extract session and security tokens from script content
                     this.parseScriptForHeaders(script.textContent);
                 }
@@ -173,6 +174,13 @@ class ShopeeAutoPublisher {
         switch (message.type) {
             case 'TOGGLE_AUTO_PUBLISH':
                 if (message.enabled) {
+                    // Store the domain for API requests
+                    if (message.domain) {
+                        this.currentDomain = message.domain;
+                    } else {
+                        // Extract domain from current URL
+                        this.currentDomain = this.extractDomainFromUrl(window.location.href);
+                    }
                     this.startAutomation();
                 } else {
                     this.stopAutomation();
@@ -293,7 +301,7 @@ class ShopeeAutoPublisher {
         // Try to make the same request that the page would make to get the first page of products
         // This will trigger the browser to use its actual session and security tokens
         
-        const url = `https://seller.shopee.ph/api/v3/mpsku/list/v2/get_draft_product_list?` +
+        const url = `${this.getApiBaseUrl()}/v3/mpsku/list/v2/get_draft_product_list?` +
             `SPC_CDS=${this.getSPCCDS()}&SPC_CDS_VER=2&page_number=1&page_size=1&qc_status=all`;
         
         // Make the request using the browser's native fetch (before our interception)
@@ -335,7 +343,7 @@ class ShopeeAutoPublisher {
             window.fetch = function(...args) {
                 const [url, options] = args;
                 
-                if (url.includes('seller.shopee.ph/api/') && options && options.headers) {
+                if (url.includes(`${self.currentDomain}/api/`) && options && options.headers) {
                     // Capture all headers from any Shopee API request
                     Object.assign(self.capturedHeaders, options.headers);
                     
@@ -377,6 +385,20 @@ class ShopeeAutoPublisher {
         this.sendLog('Automation stopped by user', 'info').catch(() => {});
         this.updateStatus('Stopped', 0).catch(() => {});
         chrome.storage.local.set({ autoPublishEnabled: false });
+    }
+
+    extractDomainFromUrl(url) {
+        try {
+            const match = url.match(/https:\/\/(seller\.shopee\.[^\/]+)/);
+            return match ? match[1] : 'seller.shopee.ph';
+        } catch (error) {
+            console.warn('Could not extract domain from URL:', error);
+            return 'seller.shopee.ph';
+        }
+    }
+
+    getApiBaseUrl() {
+        return `https://${this.currentDomain}/api`;
     }
 
     async runAutomationFlow() {
@@ -549,28 +571,28 @@ class ShopeeAutoPublisher {
     }
 
     async getDraftProducts(page = 1) {
-        const url = `https://seller.shopee.ph/api/v3/mpsku/list/v2/get_draft_product_list?` +
+        const url = `${this.getApiBaseUrl()}/v3/mpsku/list/v2/get_draft_product_list?` +
             `SPC_CDS=${this.getSPCCDS()}&SPC_CDS_VER=2&page_number=${page}&page_size=${this.pageSize}&qc_status=all`;
         
         return await this.makeAPIRequest(url, 'GET');
     }
 
     async getContentQualityInfo(productIds) {
-        const url = `https://seller.shopee.ph/api/v3/mpsku/list/v2/get_content_quality_info?` +
+        const url = `${this.getApiBaseUrl()}/v3/mpsku/list/v2/get_content_quality_info?` +
             `SPC_CDS=${this.getSPCCDS()}&SPC_CDS_VER=2&product_ids=${productIds.join(',')}&is_draft=true`;
         
         return await this.makeAPIRequest(url, 'GET');
     }
 
     async getProductInfo(productId) {
-        const url = `https://seller.shopee.ph/api/v3/product/get_product_info?` +
+        const url = `${this.getApiBaseUrl()}/v3/product/get_product_info?` +
             `SPC_CDS=${this.getSPCCDS()}&SPC_CDS_VER=2&product_id=${productId}&is_draft=true`;
         
         return await this.makeAPIRequest(url, 'GET');
     }
 
     async publishProduct(productInfo) {
-        const url = `https://seller.shopee.ph/api/v3/product/create_product_info_for_draft?` +
+        const url = `${this.getApiBaseUrl()}/v3/product/create_product_info_for_draft?` +
             `SPC_CDS=${this.getSPCCDS()}&SPC_CDS_VER=2`;
         
         const payload = {
@@ -583,7 +605,7 @@ class ShopeeAutoPublisher {
     }
 
     async reportBusinessMetrics(productId, productName, productInfo = null) {
-        const url = `https://seller.shopee.ph/api/v3/general/report_upload_business_metrics?` +
+        const url = `${this.getApiBaseUrl()}/v3/general/report_upload_business_metrics?` +
             `SPC_CDS=${this.getSPCCDS()}&SPC_CDS_VER=2`;
         
         // Generate session ID for metrics (random number like Shopee uses)
@@ -658,7 +680,7 @@ class ShopeeAutoPublisher {
     }
 
     async deleteProduct(productId, productName) {
-        const url = `https://seller.shopee.ph/api/tool/mass_product/delete_product/?` +
+        const url = `${this.getApiBaseUrl()}/tool/mass_product/delete_product/?` +
             `SPC_CDS=${this.getSPCCDS()}&SPC_CDS_VER=2`;
         
         const deletePayload = {

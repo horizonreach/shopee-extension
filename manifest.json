@@ -11,7 +11,14 @@
   ],
   
   "host_permissions": [
-    "https://seller.shopee.ph/*"
+    "https://seller.shopee.ph/*",
+    "https://seller.shopee.com.my/*",
+    "https://seller.shopee.sg/*",
+    "https://seller.shopee.co.th/*",
+    "https://seller.shopee.vn/*",
+    "https://seller.shopee.co.id/*",
+    "https://seller.shopee.com.br/*",
+    "https://seller.shopee.com/*"
   ],
   
   "background": {
@@ -20,7 +27,16 @@
   
   "content_scripts": [
     {
-      "matches": ["https://seller.shopee.ph/portal/product/list/unpublished/draft*"],
+      "matches": [
+        "https://seller.shopee.ph/portal/product/list/unpublished/draft*",
+        "https://seller.shopee.com.my/portal/product/list/unpublished/draft*",
+        "https://seller.shopee.sg/portal/product/list/unpublished/draft*",
+        "https://seller.shopee.co.th/portal/product/list/unpublished/draft*",
+        "https://seller.shopee.vn/portal/product/list/unpublished/draft*",
+        "https://seller.shopee.co.id/portal/product/list/unpublished/draft*",
+        "https://seller.shopee.com.br/portal/product/list/unpublished/draft*",
+        "https://seller.shopee.com/portal/product/list/unpublished/draft*"
+      ],
       "js": ["content.js"],
       "run_at": "document_end"
     }

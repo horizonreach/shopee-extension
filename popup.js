@@ -20,6 +20,8 @@ class PopupController {
         this.modal = document.getElementById('completionModal');
         this.closeModalBtn = document.getElementById('closeModal');
         this.completionMessage = document.getElementById('completionMessage');
+        this.domainSelect = document.getElementById('domainSelect');
+        this.customDomainInput = document.getElementById('customDomain');
     }
 
     async loadState() {
@@ -28,7 +30,9 @@ class PopupController {
                 'autoPublishEnabled',
                 'stats',
                 'logs',
-                'currentStatus'
+                'currentStatus',
+                'selectedDomain',
+                'customDomain'
             ]);
 
             this.toggle.checked = result.autoPublishEnabled || false;
@@ -43,6 +47,16 @@ class PopupController {
             if (result.currentStatus) {
                 this.updateProgress(result.currentStatus);
             }
+            
+            // Load domain settings
+            const selectedDomain = result.selectedDomain || 'seller.shopee.ph';
+            this.domainSelect.value = selectedDomain;
+            
+            if (result.customDomain) {
+                this.customDomainInput.value = result.customDomain;
+            }
+            
+            this.handleDomainSelectChange();
         } catch (error) {
             console.error('Error loading state:', error);
         }
@@ -53,6 +67,8 @@ class PopupController {
         this.clearLogsBtn.addEventListener('click', () => this.clearLogs());
         this.resetCountersBtn.addEventListener('click', () => this.resetCounters());
         this.closeModalBtn.addEventListener('click', () => this.closeModal());
+        this.domainSelect.addEventListener('change', () => this.handleDomainSelectChange());
+        this.customDomainInput.addEventListener('input', () => this.handleCustomDomainChange());
         
         // Listen for messages from content script
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -68,12 +84,13 @@ class PopupController {
             this.updateStatus(enabled ? 'on' : 'off');
             
             if (enabled) {
-                this.addLog('Auto publishing enabled', 'info');
+                const selectedDomain = await this.getSelectedDomain();
+                this.addLog(`Auto publishing enabled for ${selectedDomain}`, 'info');
                 this.updateProgress({ text: 'Opening Shopee draft page...', progress: 5 });
                 
-                // Open new tab with Shopee draft products page
+                // Open new tab with selected Shopee domain
                 const newTab = await chrome.tabs.create({
-                    url: 'https://seller.shopee.ph/portal/product/list/unpublished/draft',
+                    url: `https://${selectedDomain}/portal/product/list/unpublished/draft`,
                     active: true
                 });
                 
@@ -84,7 +101,8 @@ class PopupController {
                     try {
                         await chrome.tabs.sendMessage(newTab.id, {
                             type: 'TOGGLE_AUTO_PUBLISH',
-                            enabled: enabled
+                            enabled: enabled,
+                            domain: selectedDomain
                         });
                         this.addLog('Session initialization started', 'info');
                         this.updateProgress({ text: 'Initializing session...', progress: 10 });
@@ -99,7 +117,7 @@ class PopupController {
                 this.updateProgress({ text: 'Stopped', progress: 0 });
                 
                 // Send message to any Shopee tabs to stop automation
-                const tabs = await chrome.tabs.query({ url: 'https://seller.shopee.ph/*' });
+                const tabs = await chrome.tabs.query({ url: 'https://seller.shopee.*/*' });
                 for (const tab of tabs) {
                     try {
                         await chrome.tabs.sendMessage(tab.id, {
@@ -231,6 +249,52 @@ class PopupController {
         this.modal.style.display = 'none';
     }
 
+    async handleDomainSelectChange() {
+        const selectedValue = this.domainSelect.value;
+        
+        if (selectedValue === 'custom') {
+            this.customDomainInput.style.display = 'block';
+        } else {
+            this.customDomainInput.style.display = 'none';
+            // Save the selected domain
+            await chrome.storage.local.set({ 
+                selectedDomain: selectedValue,
+                customDomain: ''
+            });
+            this.addLog(`Domain changed to: ${selectedValue}`, 'info');
+        }
+    }
+
+    async handleCustomDomainChange() {
+        const customDomain = this.customDomainInput.value.trim();
+        if (customDomain) {
+            // Validate domain format
+            const domainRegex = /^seller\.shopee\.[a-z.]+$/;
+            if (domainRegex.test(customDomain)) {
+                await chrome.storage.local.set({ 
+                    selectedDomain: 'custom',
+                    customDomain: customDomain
+                });
+                this.addLog(`Custom domain set to: ${customDomain}`, 'info');
+            } else {
+                this.addLog('Invalid domain format. Use: seller.shopee.xxx', 'error');
+            }
+        }
+    }
+
+    async getSelectedDomain() {
+        try {
+            const result = await chrome.storage.local.get(['selectedDomain', 'customDomain']);
+            if (result.selectedDomain === 'custom' && result.customDomain) {
+                return result.customDomain;
+            }
+            return result.selectedDomain || 'seller.shopee.ph';
+        } catch (error) {
+            console.error('Error getting selected domain:', error);
+            return 'seller.shopee.ph';
+        }
+    }
+
     startStateMonitoring() {
         // Monitor storage changes
         chrome.storage.onChanged.addListener((changes, namespace) => {
@@ -270,9 +334,10 @@ class PopupController {
         });
         
         // Check if we're on the right page
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
             const tab = tabs[0];
-            if (!tab || !tab.url.includes('seller.shopee.ph/portal/product/list/unpublished/draft')) {
+            const selectedDomain = await this.getSelectedDomain();
+            if (!tab || !tab.url.includes(`${selectedDomain}/portal/product/list/unpublished/draft`)) {
                 this.addLog('Ready to start - Enable toggle to open Shopee draft page automatically', 'info');
                 this.updateProgress({ text: 'Ready to start automation', progress: 0 });
             }
