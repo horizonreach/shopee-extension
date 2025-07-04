@@ -67,21 +67,49 @@ class PopupController {
             await chrome.storage.local.set({ autoPublishEnabled: enabled });
             this.updateStatus(enabled ? 'on' : 'off');
             
-            // Send message to content script
-            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            if (tab && tab.url.includes('seller.shopee.ph')) {
-                chrome.tabs.sendMessage(tab.id, {
-                    type: 'TOGGLE_AUTO_PUBLISH',
-                    enabled: enabled
-                });
-            }
-            
             if (enabled) {
                 this.addLog('Auto publishing enabled', 'info');
-                this.updateProgress({ text: 'Starting automation...', progress: 0 });
+                this.updateProgress({ text: 'Opening Shopee draft page...', progress: 5 });
+                
+                // Open new tab with Shopee draft products page
+                const newTab = await chrome.tabs.create({
+                    url: 'https://seller.shopee.ph/portal/product/list/unpublished/draft',
+                    active: true
+                });
+                
+                this.addLog('Opening new tab for session initialization...', 'info');
+                
+                // Wait for tab to load and then send message to content script
+                setTimeout(async () => {
+                    try {
+                        await chrome.tabs.sendMessage(newTab.id, {
+                            type: 'TOGGLE_AUTO_PUBLISH',
+                            enabled: enabled
+                        });
+                        this.addLog('Session initialization started', 'info');
+                        this.updateProgress({ text: 'Initializing session...', progress: 10 });
+                    } catch (error) {
+                        console.error('Error sending message to content script:', error);
+                        this.addLog('Error: Failed to initialize session', 'error');
+                    }
+                }, 3000); // Wait 3 seconds for page to fully load
+                
             } else {
                 this.addLog('Auto publishing disabled', 'info');
                 this.updateProgress({ text: 'Stopped', progress: 0 });
+                
+                // Send message to any Shopee tabs to stop automation
+                const tabs = await chrome.tabs.query({ url: 'https://seller.shopee.ph/*' });
+                for (const tab of tabs) {
+                    try {
+                        await chrome.tabs.sendMessage(tab.id, {
+                            type: 'TOGGLE_AUTO_PUBLISH',
+                            enabled: false
+                        });
+                    } catch (error) {
+                        // Ignore errors for tabs that don't have content script
+                    }
+                }
             }
         } catch (error) {
             console.error('Error toggling auto publish:', error);
@@ -245,8 +273,8 @@ class PopupController {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             const tab = tabs[0];
             if (!tab || !tab.url.includes('seller.shopee.ph/portal/product/list/unpublished/draft')) {
-                this.addLog('Please navigate to Shopee draft products page', 'info');
-                this.updateProgress({ text: 'Navigate to draft products page', progress: 0 });
+                this.addLog('Ready to start - Enable toggle to open Shopee draft page automatically', 'info');
+                this.updateProgress({ text: 'Ready to start automation', progress: 0 });
             }
         });
     }

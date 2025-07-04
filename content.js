@@ -192,11 +192,25 @@ class ShopeeAutoPublisher {
         try {
             // First, ensure we have valid headers by triggering a page refresh if needed
             await this.ensureValidHeaders();
+            
+            // Notify that session is initialized
+            chrome.runtime.sendMessage({
+                type: 'SESSION_INITIALIZED'
+            }).catch(() => {});
+            
+            this.sendLog('Session initialized successfully - Starting automation process', 'info').catch(() => {});
+            
             await this.runAutomationFlow();
         } catch (error) {
             console.error('Automation error:', error);
             this.sendLog(`Automation failed: ${error.message}`, 'error').catch(() => {});
             this.sendError('Automation process failed').catch(() => {});
+            
+            // Notify session error
+            chrome.runtime.sendMessage({
+                type: 'SESSION_ERROR',
+                message: error.message
+            }).catch(() => {});
         } finally {
             this.isRunning = false;
         }

@@ -76,6 +76,21 @@ class BackgroundService {
                         sendResponse({ tab: tabs[0] });
                     });
                     return true; // Keep response channel open
+                    
+                case 'SESSION_INITIALIZED':
+                    await this.addLogEntry('Session initialized successfully', 'info');
+                    await chrome.storage.local.set({ 
+                        currentStatus: { text: 'Session ready - Starting automation...', progress: 20 }
+                    });
+                    break;
+                    
+                case 'SESSION_ERROR':
+                    await chrome.storage.local.set({ 
+                        autoPublishEnabled: false,
+                        currentStatus: { text: 'Session error', progress: 0 }
+                    });
+                    await this.addLogEntry(`Session error: ${message.message}`, 'error');
+                    break;
             }
             
             // Send response to indicate success
