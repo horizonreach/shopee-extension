@@ -427,7 +427,7 @@ class ShopeeAutoPublisher {
                 this.updateStatus(`Scanning pages... (${allQualifiedProducts.length} qualified found)`, progress).catch(() => {});
                 
                 // Much longer delay between pages to avoid rate limiting
-                await this.delay(5000 + (Math.random() * 3000)); // 5-8 seconds random delay
+                await this.delay(2500); // 5-8 seconds random delay
                 
             } catch (error) {
                 this.sendLog(`Error on page ${currentPage}: ${error.message}`, 'error').catch(() => {});
@@ -473,6 +473,29 @@ class ShopeeAutoPublisher {
                             this.sendLog(`Successfully published: ${product.name}`, 'success').catch(() => {});
                             this.stats.published++;
                             publishSuccess = true;
+                            
+                            // Report business metrics after successful publish (like the browser does)
+                            try {
+                                // Small delay to simulate natural browser behavior
+                                await this.delay(1000); // 1-3 seconds
+                                await this.reportBusinessMetrics(product.id, product.name, productInfo.data.product_info);
+                                this.sendLog(`📊 Reported metrics for: ${product.name}`, 'info').catch(() => {});
+                                
+                                // Delete product after reporting metrics
+                                try {
+                                    await this.delay(500); // Small delay before deletion
+                                    await this.deleteProduct(product.id, product.name);
+                                    this.sendLog(`🗑️ Deleted draft product: ${product.name}`, 'success').catch(() => {});
+                                } catch (deleteError) {
+                                    // Don't fail the whole process if deletion fails
+                                    this.sendLog(`⚠️ Product deletion failed: ${deleteError.message}`, 'warning').catch(() => {});
+                                    console.warn('Failed to delete product:', deleteError);
+                                }
+                            } catch (metricsError) {
+                                // Don't fail the whole process if metrics reporting fails
+                                this.sendLog(`⚠️ Metrics reporting failed: ${metricsError.message}`, 'warning').catch(() => {});
+                                console.warn('Failed to report business metrics:', metricsError);
+                            }
                         } else {
                             throw new Error(`Publish failed: ${publishResult.message || 'Unknown error'}`);
                         }
@@ -505,7 +528,7 @@ class ShopeeAutoPublisher {
             this.updateStatus(`Publishing products... (${i + 1}/${allQualifiedProducts.length})`, progress).catch(() => {});
             
             // Much longer delay between product publishing to avoid rate limiting
-            await this.delay(10000 + (Math.random() * 5000)); // 10-15 seconds random delay
+            await this.delay(5000); // 10-15 seconds random delay
         }
 
         this.completeAutomation();
@@ -543,6 +566,92 @@ class ShopeeAutoPublisher {
         };
 
         return await this.makeAPIRequest(url, 'POST', payload);
+    }
+
+    async reportBusinessMetrics(productId, productName, productInfo = null) {
+        const url = `https://seller.shopee.ph/api/v3/general/report_upload_business_metrics?` +
+            `SPC_CDS=${this.getSPCCDS()}&SPC_CDS_VER=2`;
+        
+        // Generate session ID for metrics (random number like Shopee uses)
+        const sessionId = Date.now().toString() + Math.floor(Math.random() * 1000000);
+        
+        // Calculate event duration (simulate processing time)
+        const eventDuration = 3000 + Math.floor(Math.random() * 7000); // 3-10 seconds
+        
+        // Use actual product category path if available, otherwise use default
+        const categoryPath = productInfo?.category_path || [100639, 100737, 101386];
+        const brandInfo = productInfo?.brand_info || { brand_name: "No brand", brand_id: 0 };
+        
+        const metricsPayload = {
+            metrics: [{
+                product_id: productId,
+                report_module: "mpsku-detail-page",
+                event_duration: eventDuration,
+                success_count: 1,
+                total_count: 1,
+                payload: JSON.stringify({
+                    session_id: sessionId,
+                    tss_action: "",
+                    event_duration_old: eventDuration,
+                    event_duration_v2: Math.floor(eventDuration * 0.6), // Slightly less than old duration
+                    abnormal_tracker: {},
+                    items: [{
+                        item_id: 0,
+                        item_status: 10, // Published status
+                        category_id: categoryPath,
+                        panels: [{
+                            name: "basicInfoPanel",
+                            latency: Math.floor(Math.random() * 2000) + 500 // 500-2500ms
+                        }],
+                        fields: [],
+                        rcmd: [{
+                            name: "name",
+                            group_id: "",
+                            final_val: productName.substring(0, 50) // Truncate long names
+                        }, {
+                            name: "categoryPath",
+                            group_id: "",
+                            final_val: categoryPath
+                        }, {
+                            name: "attribute",
+                            group_id: "",
+                            final_val: productInfo?.attributes || []
+                        }, {
+                            name: "variation",
+                            group_id: "",
+                            final_val: []
+                        }, {
+                            name: "brand",
+                            final_val: {
+                                brand_name: brandInfo.brand_name || "No brand",
+                                brand_id: brandInfo.brand_id || 0
+                            }
+                        }],
+                        preqc: {
+                            snapshots: [],
+                            final: {
+                                rules: []
+                            }
+                        }
+                    }],
+                    execute_ab_test_group: [539604, 506718, 506722, 530960, 507514, 531129, 493412, 506724, 517185, 0, 490408]
+                }),
+                event_operation: 8 // Publish operation
+            }]
+        };
+
+        return await this.makeAPIRequest(url, 'POST', metricsPayload);
+    }
+
+    async deleteProduct(productId, productName) {
+        const url = `https://seller.shopee.ph/api/tool/mass_product/delete_product/?` +
+            `SPC_CDS=${this.getSPCCDS()}&SPC_CDS_VER=2`;
+        
+        const deletePayload = {
+            unpublished_ids: [productId]
+        };
+
+        return await this.makeAPIRequest(url, 'POST', deletePayload);
     }
 
     prepareProductForPublish(productInfo) {
@@ -716,7 +825,7 @@ class ShopeeAutoPublisher {
             
             // Add extra delay after any error to prevent rapid retries
             if (error.message.includes('Rate limited') || error.message.includes('429') || error.message.includes('403')) {
-                await this.delay(20000); // Wait 20 seconds after rate limit error
+                await this.delay(5000); // Wait 20 seconds after rate limit error
             } else {
                 await this.delay(2000); // Wait 2 seconds after any other error
             }
