@@ -1157,7 +1157,7 @@ class ShopeeAutoPublisher {
 }
 
 // Initialize the auto publisher with proper timing (prevent duplicates)
-if (window.location.href.includes('seller.shopee.ph/portal/product/list/unpublished/draft') && !window.shopeeAutoPublisherInstance) {
+if (window.location.href.includes('/portal/product/list/unpublished/draft') && window.location.href.includes('seller.shopee.') && !window.shopeeAutoPublisherInstance) {
     // Single initialization point
     const initializePublisher = () => {
         if (!window.shopeeAutoPublisherInstance) {
