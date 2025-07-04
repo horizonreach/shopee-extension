@@ -85,8 +85,8 @@ class PopupController {
             
             if (enabled) {
                 const selectedDomain = await this.getSelectedDomain();
-                this.addLog(`Auto publishing enabled for ${selectedDomain}`, 'info');
-                this.updateProgress({ text: 'Opening Shopee draft page...', progress: 5 });
+                this.addLog(`${selectedDomain} で自動出品を開始しました`, 'info');
+                this.updateProgress({ text: 'Shopeeドラフトページを開いています...', progress: 5 });
                 
                 // Open new tab with selected Shopee domain
                 const newTab = await chrome.tabs.create({
@@ -94,7 +94,7 @@ class PopupController {
                     active: true
                 });
                 
-                this.addLog('Opening new tab for session initialization...', 'info');
+                this.addLog('セッション初期化のため新しいタブを開いています...', 'info');
                 
                 // Wait for tab to load and then send message to content script
                 setTimeout(async () => {
@@ -104,17 +104,17 @@ class PopupController {
                             enabled: enabled,
                             domain: selectedDomain
                         });
-                        this.addLog('Session initialization started', 'info');
-                        this.updateProgress({ text: 'Initializing session...', progress: 10 });
+                        this.addLog('セッション初期化を開始しました', 'info');
+                        this.updateProgress({ text: 'セッションを初期化しています...', progress: 10 });
                     } catch (error) {
                         console.error('Error sending message to content script:', error);
-                        this.addLog('Error: Failed to initialize session', 'error');
+                        this.addLog('エラー: セッション初期化に失敗しました', 'error');
                     }
                 }, 3000); // Wait 3 seconds for page to fully load
                 
             } else {
-                this.addLog('Auto publishing disabled', 'info');
-                this.updateProgress({ text: 'Stopped', progress: 0 });
+                this.addLog('自動出品を停止しました', 'info');
+                this.updateProgress({ text: '停止済み', progress: 0 });
                 
                 // Send message to any Shopee tabs to stop automation
                 const tabs = await chrome.tabs.query({ url: 'https://seller.shopee.*/*' });
@@ -131,7 +131,7 @@ class PopupController {
             }
         } catch (error) {
             console.error('Error toggling auto publish:', error);
-            this.addLog('Error: Failed to toggle auto publish', 'error');
+            this.addLog('エラー: 自動出品の切り替えに失敗しました', 'error');
         }
     }
 
@@ -150,7 +150,7 @@ class PopupController {
                 this.handleCompletion(message.data);
                 break;
             case 'ERROR':
-                this.addLog(`Error: ${message.message}`, 'error');
+                this.addLog(`エラー: ${message.message}`, 'error');
                 this.updateStatus('off');
                 this.toggle.checked = false;
                 break;
@@ -158,7 +158,21 @@ class PopupController {
     }
 
     updateStatus(status) {
-        this.statusElement.textContent = status.toUpperCase();
+        let statusText = '';
+        switch(status) {
+            case 'on':
+                statusText = '実行中';
+                break;
+            case 'off':
+                statusText = '停止中';
+                break;
+            case 'completed':
+                statusText = '完了';
+                break;
+            default:
+                statusText = status;
+        }
+        this.statusElement.textContent = statusText;
         this.statusElement.className = `status-value ${status}`;
     }
 
@@ -221,21 +235,21 @@ class PopupController {
     async clearLogs() {
         this.logsElement.innerHTML = '';
         await chrome.storage.local.set({ logs: [] });
-        this.addLog('Logs cleared', 'info');
+        this.addLog('ログをクリアしました', 'info');
     }
 
     async resetCounters() {
         const stats = { processed: 0, published: 0, errors: 0 };
         this.updateStats(stats);
         await chrome.storage.local.set({ stats });
-        this.addLog('Counters reset', 'info');
+        this.addLog('カウンターをリセットしました', 'info');
     }
 
     handleCompletion(data) {
         this.updateStatus('completed');
         this.toggle.checked = false;
         
-        const message = `Processing completed!\n\nProcessed: ${data.processed}\nPublished: ${data.published}\nErrors: ${data.errors}`;
+        const message = `処理が完了しました！\n\n処理済み: ${data.processed}\n出品済み: ${data.published}\nエラー: ${data.errors}`;
         this.completionMessage.textContent = message;
         this.modal.style.display = 'block';
         
@@ -261,7 +275,7 @@ class PopupController {
                 selectedDomain: selectedValue,
                 customDomain: ''
             });
-            this.addLog(`Domain changed to: ${selectedValue}`, 'info');
+            this.addLog(`ドメインを ${selectedValue} に変更しました`, 'info');
         }
     }
 
@@ -275,9 +289,9 @@ class PopupController {
                     selectedDomain: 'custom',
                     customDomain: customDomain
                 });
-                this.addLog(`Custom domain set to: ${customDomain}`, 'info');
+                this.addLog(`カスタムドメインを ${customDomain} に設定しました`, 'info');
             } else {
-                this.addLog('Invalid domain format. Use: seller.shopee.xxx', 'error');
+                this.addLog('無効なドメイン形式です。形式: seller.shopee.xxx', 'error');
             }
         }
     }
@@ -338,8 +352,8 @@ class PopupController {
             const tab = tabs[0];
             const selectedDomain = await this.getSelectedDomain();
             if (!tab || !tab.url.includes(`${selectedDomain}/portal/product/list/unpublished/draft`)) {
-                this.addLog('Ready to start - Enable toggle to open Shopee draft page automatically', 'info');
-                this.updateProgress({ text: 'Ready to start automation', progress: 0 });
+                this.addLog('開始準備完了 - トグルを有効にするとShopeeドラフトページが自動で開きます', 'info');
+                this.updateProgress({ text: '自動化開始準備完了', progress: 0 });
             }
         });
     }

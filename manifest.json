@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Shopee Product Auto Publisher",
+  "name": "Shopee 自動出品ツール",
   "version": "1.0.0",
-  "description": "Automatically publish qualified draft products on Shopee seller center",
+  "description": "Shopeeセラーセンターで条件を満たすドラフト商品を自動出品します",
   
   "permissions": [
     "activeTab",
@@ -42,7 +42,7 @@
   
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Shopee Auto Publisher"
+    "default_title": "Shopee 自動出品ツール"
   },
   
   "icons": {
