@@ -1,215 +1,214 @@
-# Shopee Product Auto Publisher
+# Shopee商品自動公開ツール
 
-A Chrome extension for automatically publishing qualified draft products on Shopee Seller Center using API requests.
+Shopee Seller CenterでAPIリクエストを使用して、条件を満たす下書き商品を自動的に公開するChrome拡張機能です。
 
-## Features
+![UI Screenshot](UI.png)
 
-- ✅ Automatically scans all draft products across multiple pages
-- ✅ Filters products with Content Quality Level 2 (Qualified)
-- ✅ Publishes qualified products using Shopee's API
-- ✅ Real-time progress tracking and logging
-- ✅ Modern, intuitive UI with toggle switch
-- ✅ Comprehensive error handling and retry logic
-- ✅ Statistics tracking (processed, published, errors)
-- ✅ Visual completion notification
+## 主な機能
 
-## Requirements
+- ✅ 複数ページにわたってすべての下書き商品を自動スキャン
+- ✅ コンテンツ品質レベル2（適格）の商品をフィルタリング
+- ✅ ShopeeのAPIを使用して適格商品を公開
+- ✅ リアルタイム進捗追跡とログ記録
+- ✅ トグルスイッチ付きのモダンで直感的なUI
+- ✅ 包括的なエラー処理と再試行ロジック
+- ✅ 統計追跡（処理済み、公開済み、エラー数）
+- ✅ 視覚的な完了通知
 
-- Google Chrome browser
-- Active Shopee Seller account
-- Access to Shopee Seller Center (Philippines)
+## 必要要件
 
-## Installation
+- Google Chromeブラウザ
+- アクティブなShopee Sellerアカウント
+- Shopee Seller Center（フィリピン）へのアクセス権
 
-### Method 1: Developer Mode (Recommended)
+## インストール方法
 
-1. **Download the Extension Files**
-   - Download all files from this repository
-   - Extract to a folder on your computer
+### 方法1：デベロッパーモード（推奨）
 
-2. **Enable Developer Mode in Chrome**
-   - Open Chrome and navigate to `chrome://extensions/`
-   - Toggle "Developer mode" in the top right corner
+1. **拡張機能ファイルのダウンロード**
+   - このリポジトリからすべてのファイルをダウンロード
+   - コンピュータ上のフォルダに展開
 
-3. **Load the Extension**
-   - Click "Load unpacked" button
-   - Select the folder containing the extension files
-   - The extension should now appear in your extensions list
+2. **Chromeでデベロッパーモードを有効化**
+   - Chromeを開き、`chrome://extensions/`に移動
+   - 右上の「デベロッパーモード」をオンにする
 
-4. **Verify Installation**
-   - Look for the Shopee Auto Publisher icon in your Chrome toolbar
-   - The extension is ready to use!
+3. **拡張機能の読み込み**
+   - 「パッケージ化されていない拡張機能を読み込む」ボタンをクリック
+   - 拡張機能ファイルが含まれるフォルダを選択
+   - 拡張機能がリストに表示されます
 
-### Method 2: Chrome Web Store (Future)
-*This extension may be published to the Chrome Web Store in the future.*
+4. **インストールの確認**
+   - ChromeツールバーでShopee Auto Publisherアイコンを確認
+   - 拡張機能が使用準備完了！
 
-## Usage
+### 方法2：Chrome Web Store（将来）
+*この拡張機能は将来Chrome Web Storeで公開される可能性があります。*
 
-### Getting Started
+## 使用方法
 
-1. **Navigate to Draft Products Page**
-   - Go to [Shopee Seller Center](https://seller.shopee.ph/)
-   - Navigate to: `Products` > `Product List` > `Unpublished` > `Draft`
-   - Or directly visit: `https://seller.shopee.ph/portal/product/list/unpublished/draft`
+### はじめに
 
-2. **Open Extension Popup**
-   - Click the Shopee Auto Publisher icon in your toolbar
-   - The popup will show current status and controls
+1. **下書き商品ページに移動**
+   - [Shopee Seller Center](https://seller.shopee.ph/)にアクセス
+   - `商品` > `商品リスト` > `未公開` > `下書き`に移動
+   - または直接アクセス：`https://seller.shopee.ph/portal/product/list/unpublished/draft`
 
-3. **Start Automation**
-   - Toggle the "Auto Publish" switch to ON
-   - The extension will automatically:
-     - Scan all draft products across all pages
-     - Filter products with Content Quality Level 2
-     - Publish each qualified product
-     - Show real-time progress and logs
+2. **拡張機能ポップアップを開く**
+   - ツールバーのShopee Auto Publisherアイコンをクリック
+   - ポップアップに現在のステータスとコントロールが表示されます
 
-4. **Monitor Progress**
-   - Watch the progress bar and activity log
-   - View statistics for processed, published, and error counts
-   - The extension will show a completion notification when done
+3. **自動化を開始**
+   - 「自動公開」スイッチをONにする
+   - 拡張機能が自動的に：
+     - すべてのページの下書き商品をスキャン
+     - コンテンツ品質レベル2の商品をフィルタリング
+     - 各適格商品を公開
+     - リアルタイムの進捗とログを表示
 
-### Understanding the Interface
+4. **進捗の監視**
+   - 進捗バーと活動ログを確認
+   - 処理済み、公開済み、エラー数の統計を表示
+   - 完了時に完了通知を表示
 
-#### Status Indicators
-- **OFF**: Extension is inactive
-- **ON**: Extension is running
-- **COMPLETED**: Processing finished
+### インターフェースの理解
 
-#### Statistics
-- **Processed**: Total products examined
-- **Published**: Successfully published products  
-- **Errors**: Failed publication attempts
+#### ステータスインジケータ
+- **OFF**：拡張機能が非アクティブ
+- **ON**：拡張機能が実行中
+- **COMPLETED**：処理完了
 
-#### Activity Log
-- Real-time logging of all actions
-- Color-coded messages (success, error, info)
-- Automatically scrolls to latest entries
+#### 統計情報
+- **処理済み**：検査された商品の総数
+- **公開済み**：正常に公開された商品数
+- **エラー**：公開に失敗した試行回数
 
-#### Controls
-- **Clear Logs**: Remove all log entries
-- **Reset Counters**: Reset statistics to zero
+#### 活動ログ
+- すべてのアクションのリアルタイムログ
+- カラーコード化されたメッセージ（成功、エラー、情報）
+- 最新エントリに自動スクロール
 
-## How It Works
+#### コントロール
+- **ログクリア**：すべてのログエントリを削除
+- **カウンターリセット**：統計をゼロにリセット
 
-### Automation Flow
+## 動作原理
 
-1. **Product Discovery**
-   - Calls `get_draft_product_list` API for each page
-   - Retrieves all draft products with pagination
+### 自動化フロー
 
-2. **Quality Assessment**
-   - Calls `get_content_quality_info` API for product batches
-   - Filters products with `quality_level: 2` (Qualified)
+1. **商品の発見**
+   - 各ページで`get_draft_product_list` APIを呼び出し
+   - ページネーション付きですべての下書き商品を取得
 
-3. **Product Publishing**
-   - For each qualified product:
-     - Calls `get_product_info` API to get detailed information
-     - Calls `create_product_info_for_draft` API to publish
-     - Handles success/error responses
+2. **品質評価**
+   - 商品バッチに対して`get_content_quality_info` APIを呼び出し
+   - `quality_level: 2`（適格）の商品をフィルタリング
 
-4. **Progress Tracking**
-   - Updates UI with current status
-   - Logs all activities with timestamps
-   - Maintains statistics throughout process
+3. **商品公開**
+   - 各適格商品に対して：
+     - `get_product_info` APIを呼び出して詳細情報を取得
+     - `create_product_info_for_draft` APIを呼び出して公開
+     - 成功/エラー応答を処理
 
-### API Endpoints Used
+4. **進捗追跡**
+   - 現在のステータスでUIを更新
+   - タイムスタンプ付きですべての活動をログ
+   - プロセス全体を通じて統計を維持
 
-- `GET /api/v3/mpsku/list/v2/get_draft_product_list` - Get draft products
-- `GET /api/v3/mpsku/list/v2/get_content_quality_info` - Get quality information
-- `GET /api/v3/product/get_product_info` - Get detailed product info
-- `POST /api/v3/product/create_product_info_for_draft` - Publish product
+### 使用するAPIエンドポイント
 
-## Technical Details
+- `GET /api/v3/mpsku/list/v2/get_draft_product_list` - 下書き商品を取得
+- `GET /api/v3/mpsku/list/v2/get_content_quality_info` - 品質情報を取得
+- `GET /api/v3/product/get_product_info` - 詳細商品情報を取得
+- `POST /api/v3/product/create_product_info_for_draft` - 商品を公開
 
-### Architecture
-- **Manifest V3**: Latest Chrome extension standard
-- **Content Script**: Runs on Shopee pages, handles automation
-- **Background Service Worker**: Manages extension lifecycle
-- **Popup Interface**: User control and monitoring
+## 技術詳細
 
-### Security
-- Only works on Shopee Seller Center domain
-- Uses existing browser session and cookies
-- No external data transmission
-- All processing happens locally
+### アーキテクチャ
+- **Manifest V3**：最新のChrome拡張機能標準
+- **コンテンツスクリプト**：Shopeeページで実行、自動化を処理
+- **バックグラウンドサービスワーカー**：拡張機能のライフサイクルを管理
+- **ポップアップインターフェース**：ユーザーコントロールと監視
 
-### Performance
-- Rate limiting between API calls (1-second delay)
-- Batch processing for efficiency
-- Progress tracking for large datasets
-- Graceful error handling and recovery
+### セキュリティ
+- Shopee Seller Centerドメインでのみ動作
+- 既存のブラウザセッションとクッキーを使用
+- 外部データ送信なし
+- すべての処理がローカルで実行
 
-## Troubleshooting
+### パフォーマンス
+- API呼び出し間の速度制限（1秒遅延）
+- 効率性のためのバッチ処理
+- 大規模データセットの進捗追跡
+- 優雅なエラー処理と回復
 
-### Common Issues
+## トラブルシューティング
 
-**Extension not working:**
-- Ensure you're on the correct Shopee page
-- Check that you're logged into Shopee Seller Center
-- Refresh the page and try again
+### よくある問題
 
-**No products found:**
-- Verify you have draft products in your account
-- Check that products have Content Quality assessments
-- Ensure products are eligible for publishing
+**拡張機能が動作しない：**
+- 正しいShopeeページにいることを確認
+- Shopee Seller Centerにログインしていることを確認
+- ページを更新して再試行
 
-**API errors:**
-- Session may have expired - refresh and re-login
-- Network connectivity issues
-- Shopee server temporary issues
+**商品が見つからない：**
+- アカウントに下書き商品があることを確認
+- 商品がコンテンツ品質評価を受けていることを確認
+- 商品が公開対象であることを確認
 
-**Permission errors:**
-- Ensure extension has proper permissions
-- Check Chrome's site permissions for Shopee
+**APIエラー：**
+- セッションが期限切れの可能性 - 更新して再ログイン
+- ネットワーク接続の問題
+- Shopeeサーバーの一時的な問題
 
-### Getting Help
+**権限エラー：**
+- 拡張機能が適切な権限を持っていることを確認
+- ShopeeのChromeサイト権限を確認
 
-1. Check the Activity Log in the extension popup
-2. Open Chrome DevTools (F12) and check Console for errors
-3. Verify your Shopee account has proper permissions
-4. Try refreshing the page and restarting the extension
+### ヘルプの取得
 
-## Development
+1. 拡張機能ポップアップの活動ログを確認
+2. Chrome DevTools（F12）を開いてコンソールのエラーを確認
+3. Shopeeアカウントが適切な権限を持っていることを確認
+4. ページを更新して拡張機能を再起動
 
-### File Structure
+## 開発
+
+### ファイル構造
 ```
 shopee-extension/
-├── manifest.json           # Extension configuration
-├── popup.html             # Popup interface
-├── popup.css              # Popup styling
-├── popup.js               # Popup logic
-├── content.js             # Main automation logic
-├── background.js          # Background service worker
-├── icons/                 # Extension icons
-└── README.md              # This file
+├── manifest.json           # 拡張機能設定
+├── popup.html             # ポップアップインターフェース
+├── popup.css              # ポップアップスタイリング
+├── popup.js               # ポップアップロジック
+├── content.js             # メイン自動化ロジック
+├── background.js          # バックグラウンドサービスワーカー
+├── icons/                 # 拡張機能アイコン
+└── README.md              # このファイル
 ```
 
-### Local Development
-1. Make changes to source files
-2. Go to `chrome://extensions/`
-3. Click "Reload" button for the extension
-4. Test changes on Shopee Seller Center
+### ローカル開発
+1. ソースファイルを変更
+2. `chrome://extensions/`に移動
+3. 拡張機能の「再読み込み」ボタンをクリック
+4. Shopee Seller Centerで変更をテスト
 
-## Version History
+## バージョン履歴
 
-### v1.0.0 (Current)
-- Initial release
-- Basic automation functionality
-- Modern UI with progress tracking
-- Comprehensive error handling
-- Real-time logging and statistics
+### v1.0.0（現在）
+- 初回リリース
+- 基本的な自動化機能
+- 進捗追跡付きのモダンUI
+- 包括的なエラー処理
 
-## License
+## ライセンス
 
-This project is provided as-is for educational and automation purposes. Use responsibly and in accordance with Shopee's Terms of Service.
+このプロジェクトはMITライセンスの下で公開されています。
 
-## Disclaimer
+## 貢献
 
-This extension automates interactions with Shopee Seller Center. Users are responsible for:
-- Ensuring compliance with Shopee's Terms of Service
-- Verifying product information before publishing
-- Monitoring automation results
-- Using the tool responsibly
+プルリクエストを歓迎します。大きな変更については、まずissueを開いて変更したいことを議論してください。
 
-The developers are not responsible for any issues arising from the use of this extension. 
+## サポート
+
+質問や問題がある場合は、GitHubのissueを作成してください。 
