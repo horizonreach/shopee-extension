@@ -313,7 +313,7 @@ class ShopeeAutoPublisher {
                 headers: {
                     'accept': 'application/json, text/plain, */*',
                     'accept-language': 'en-US,en;q=0.9',
-                    'locale': 'en-ph',
+                    'locale': this.getLocaleForDomain(),
                     'Referer': window.location.href
                 }
             });
@@ -399,6 +399,36 @@ class ShopeeAutoPublisher {
 
     getApiBaseUrl() {
         return `https://${this.currentDomain}/api`;
+    }
+
+    getLocaleForDomain() {
+        // Map domains to their appropriate locales
+        const domainLocaleMap = {
+            'seller.shopee.ph': 'en-ph',
+            'seller.shopee.com.my': 'en-my', 
+            'seller.shopee.sg': 'en-sg',
+            'seller.shopee.co.th': 'en-th',
+            'seller.shopee.tw': 'zh-tw',
+            'seller.shopee.vn': 'en-vn',
+            'seller.shopee.com': 'en'
+        };
+        
+        return domainLocaleMap[this.currentDomain] || 'en';
+    }
+
+    getLogisticsChannelForDomain() {
+        // Map domains to their appropriate logistics channels
+        const domainLogisticsMap = {
+            'seller.shopee.ph': 48011,      // Philippines
+            'seller.shopee.com.my': 28057,  // Malaysia
+            'seller.shopee.sg': 28057,      // Singapore (assuming similar to MY)
+            'seller.shopee.co.th': 48011,   // Thailand (assuming similar to PH)
+            'seller.shopee.tw': 48011,      // Taiwan (assuming similar to PH)
+            'seller.shopee.vn': 48011,      // Vietnam (assuming similar to PH)
+            'seller.shopee.com': 48011      // Default
+        };
+        
+        return domainLogisticsMap[this.currentDomain] || 48011;
     }
 
     async runAutomationFlow() {
@@ -747,7 +777,7 @@ class ShopeeAutoPublisher {
                 price: "50",
                 cover_shipping_fee: false,
                 enabled: true,
-                channelid: 48011,
+                channelid: this.getLogisticsChannelForDomain(),
                 sizeid: 0
             }],
             model_list: productInfo.model_list?.map(model => ({
@@ -782,7 +812,7 @@ class ShopeeAutoPublisher {
         const headers = {
             'accept': 'application/json, text/plain, */*',
             'accept-language': 'en-US,en;q=0.9',
-            'locale': 'en-ph',
+            'locale': this.getLocaleForDomain(),
             'priority': 'u=1, i',
             'sec-ch-ua': '"Google Chrome";v="137", "Chromium";v="137", "Not/A)Brand";v="24"',
             'sec-ch-ua-mobile': '?0',
