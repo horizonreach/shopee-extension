@@ -407,7 +407,7 @@ class ShopeeAutoPublisher {
             'seller.shopee.ph': 'en-ph',
             'seller.shopee.com.my': 'en-my', 
             'seller.shopee.sg': 'en-sg',
-            'seller.shopee.co.th': 'en-th',
+            'seller.shopee.co.th': 'en',  // Fixed: Thailand uses 'en' not 'en-th'
             'seller.shopee.tw': 'zh-tw',
             'seller.shopee.vn': 'en-vn',
             'seller.shopee.com': 'en'
@@ -422,13 +422,28 @@ class ShopeeAutoPublisher {
             'seller.shopee.ph': 48011,      // Philippines
             'seller.shopee.com.my': 28057,  // Malaysia
             'seller.shopee.sg': 28057,      // Singapore (assuming similar to MY)
-            'seller.shopee.co.th': 48011,   // Thailand (assuming similar to PH)
+            'seller.shopee.co.th': 78021,   // Thailand - Fixed: uses 78021 not 48011
             'seller.shopee.tw': 48011,      // Taiwan (assuming similar to PH)
             'seller.shopee.vn': 48011,      // Vietnam (assuming similar to PH)
             'seller.shopee.com': 48011      // Default
         };
         
         return domainLogisticsMap[this.currentDomain] || 48011;
+    }
+
+    getShippingPriceForDomain() {
+        // Map domains to their appropriate shipping prices
+        const domainShippingMap = {
+            'seller.shopee.ph': "50",       // Philippines
+            'seller.shopee.com.my': "50",   // Malaysia
+            'seller.shopee.sg': "50",       // Singapore
+            'seller.shopee.co.th': "22",    // Thailand - Fixed: uses 22 not 50
+            'seller.shopee.tw': "50",       // Taiwan
+            'seller.shopee.vn': "50",       // Vietnam
+            'seller.shopee.com': "50"       // Default
+        };
+        
+        return domainShippingMap[this.currentDomain] || "50";
     }
 
     async runAutomationFlow() {
@@ -563,7 +578,22 @@ class ShopeeAutoPublisher {
                                 console.warn('Failed to report business metrics:', metricsError);
                             }
                         } else {
-                            throw new Error(`Publish failed: ${publishResult.message || 'Unknown error'}`);
+                            // Get more detailed error information
+                            let errorDetails = `Publish failed (code: ${publishResult.code})`;
+                            if (publishResult.message) {
+                                errorDetails += ` - ${publishResult.message}`;
+                            } else if (publishResult.msg) {
+                                errorDetails += ` - ${publishResult.msg}`;
+                            } else if (publishResult.error) {
+                                errorDetails += ` - ${publishResult.error}`;
+                            } else {
+                                errorDetails += ` - ${JSON.stringify(publishResult)}`;
+                            }
+                            
+                            // Log the full response for debugging
+                            console.log('Full publish response:', publishResult);
+                            
+                            throw new Error(errorDetails);
                         }
                     } catch (publishError) {
                         retryCount++;
@@ -748,13 +778,8 @@ class ShopeeAutoPublisher {
             },
             video_list: productInfo.video_list || [],
             description_info: {
-                description: JSON.stringify({
-                    field_list: [{
-                        type: 0,
-                        value: description
-                    }]
-                }),
-                description_type: "json"
+                description: description,
+                description_type: "normal"
             },
             dimension: productInfo.dimension || {
                 width: "",
@@ -774,7 +799,7 @@ class ShopeeAutoPublisher {
             min_purchase_limit: productInfo.min_purchase_limit || 1,
             logistics_channels: [{
                 size: 0,
-                price: "50",
+                price: this.getShippingPriceForDomain(),
                 cover_shipping_fee: false,
                 enabled: true,
                 channelid: this.getLogisticsChannelForDomain(),
@@ -803,7 +828,10 @@ class ShopeeAutoPublisher {
                 }]
             }],
             authorised_brand_id: productInfo.authorised_brand_id || 0,
-            scheduled_publish_time: 0
+            scheduled_publish_time: 0,
+            brand_license_info: {
+                license_id_list: []
+            }
         };
     }
 
@@ -850,10 +878,17 @@ class ShopeeAutoPublisher {
         }
 
         try {
+            // Log request details for debugging
+            console.log(`API ${method} request to:`, url);
+            console.log('Request headers:', headers);
+            if (data) {
+                console.log('Request payload:', JSON.stringify(data, null, 2));
+            }
+            
             const response = await fetch(url, options);
             
             // Log response details for debugging
-            console.log(`API ${method} ${url}:`, response.status, response.statusText);
+            console.log(`API ${method} response:`, response.status, response.statusText);
             
             // Handle rate limiting specifically - 403 and 429 both indicate rate limiting
             if (response.status === 429 || response.status === 403) {
@@ -871,13 +906,35 @@ class ShopeeAutoPublisher {
                 // Try to get error details from response
                 let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
                 try {
-                    const errorData = await response.text();
-                    if (errorData) {
-                        console.log('Error response body:', errorData);
-                        errorMessage += ` - ${errorData}`;
+                    // First try to parse as JSON since Shopee API returns JSON errors
+                    const contentType = response.headers.get('content-type');
+                    let errorData;
+                    
+                    if (contentType && contentType.includes('application/json')) {
+                        errorData = await response.json();
+                        console.log('Error response JSON:', errorData);
+                        
+                        // Extract specific error message from Shopee API response
+                        if (errorData.message) {
+                            errorMessage += ` - ${errorData.message}`;
+                        } else if (errorData.msg) {
+                            errorMessage += ` - ${errorData.msg}`;
+                        } else if (errorData.error) {
+                            errorMessage += ` - ${errorData.error}`;
+                        } else {
+                            errorMessage += ` - ${JSON.stringify(errorData)}`;
+                        }
+                    } else {
+                        // Fall back to text if not JSON
+                        errorData = await response.text();
+                        if (errorData) {
+                            console.log('Error response text:', errorData);
+                            errorMessage += ` - ${errorData}`;
+                        }
                     }
                 } catch (e) {
                     // Ignore if we can't read error details
+                    console.warn('Could not parse error response:', e);
                 }
                 throw new Error(errorMessage);
             }
