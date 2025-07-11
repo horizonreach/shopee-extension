@@ -409,7 +409,7 @@ class ShopeeAutoPublisher {
             'seller.shopee.sg': 'en-sg',
             'seller.shopee.co.th': 'en',  // Fixed: Thailand uses 'en' not 'en-th'
             'seller.shopee.tw': 'zh-tw',
-            'seller.shopee.vn': 'en-vn',
+            'banhang.shopee.vn': 'en-vn',
             'seller.shopee.com.br': 'pt-br',  // Brazil uses Portuguese
             'seller.shopee.com': 'en'
         };
@@ -422,11 +422,11 @@ class ShopeeAutoPublisher {
         const domainLogisticsMap = {
             'seller.shopee.ph': 48011,      // Philippines
             'seller.shopee.com.my': 28057,  // Malaysia
-            'seller.shopee.sg': 28057,      // Singapore (assuming similar to MY)
+            'seller.shopee.sg': 18045,      // Singapore (assuming similar to MY)
             'seller.shopee.co.th': 78021,   // Thailand - Fixed: uses 78021 not 48011
-            'seller.shopee.tw': 48011,      // Taiwan (assuming similar to PH)
-            'seller.shopee.vn': 48011,      // Vietnam (assuming similar to PH)
-            'seller.shopee.com.br': 48011,  // Brazil (using default channel)
+            'seller.shopee.tw': 38040,      // Taiwan (assuming similar to PH)
+            'banhang.shopee.vn': 58014,      // Vietnam (assuming similar to PH)
+            'seller.shopee.com.br': 98008,  // Brazil (using default channel)
             'seller.shopee.com': 48011      // Default
         };
         
@@ -438,11 +438,11 @@ class ShopeeAutoPublisher {
         const domainShippingMap = {
             'seller.shopee.ph': "50",       // Philippines
             'seller.shopee.com.my': "50",   // Malaysia
-            'seller.shopee.sg': "50",       // Singapore
+            'seller.shopee.sg': "1.49",       // Singapore
             'seller.shopee.co.th': "22",    // Thailand - Fixed: uses 22 not 50
-            'seller.shopee.tw': "50",       // Taiwan
-            'seller.shopee.vn': "50",       // Vietnam
-            'seller.shopee.com.br': "50",   // Brazil (using default price)
+            'seller.shopee.tw': "70",       // Taiwan
+            'banhang.shopee.vn': "15000",       // Vietnam
+            'seller.shopee.com.br': "13.00",   // Brazil (using default price)
             'seller.shopee.com': "50"       // Default
         };
         

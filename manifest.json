@@ -16,7 +16,7 @@
     "https://seller.shopee.sg/*",
     "https://seller.shopee.co.th/*",
     "https://seller.shopee.tw/*",
-    "https://seller.shopee.vn/*",
+    "https://banhang.shopee.vn/*",
     "https://seller.shopee.com.br/*",
     "https://seller.shopee.com/*"
   ],
@@ -33,7 +33,7 @@
         "https://seller.shopee.sg/portal/product/list/unpublished/draft*",
         "https://seller.shopee.co.th/portal/product/list/unpublished/draft*",
         "https://seller.shopee.tw/portal/product/list/unpublished/draft*",
-        "https://seller.shopee.vn/portal/product/list/unpublished/draft*",
+        "https://banhang.shopee.vn/portal/product/list/unpublished/draft*",
         "https://seller.shopee.com.br/portal/product/list/unpublished/draft*",
         "https://seller.shopee.com/portal/product/list/unpublished/draft*"
       ],
