@@ -389,7 +389,7 @@ class ShopeeAutoPublisher {
 
     extractDomainFromUrl(url) {
         try {
-            const match = url.match(/https:\/\/(seller\.shopee\.[^\/]+)/);
+            const match = url.match(/https:\/\/(seller\.shopee\.[^\/]+|banhang\.shopee\.vn)/);
             return match ? match[1] : 'seller.shopee.ph';
         } catch (error) {
             console.warn('Could not extract domain from URL:', error);
@@ -1246,25 +1246,55 @@ class ShopeeAutoPublisher {
     }
 }
 
-// Initialize the auto publisher with proper timing (prevent duplicates)
-if (window.location.href.includes('/portal/product/list/unpublished/draft') && window.location.href.includes('seller.shopee.') && !window.shopeeAutoPublisherInstance) {
-    // Single initialization point
-    const initializePublisher = () => {
-        if (!window.shopeeAutoPublisherInstance) {
-            try {
-                new ShopeeAutoPublisher();
-            } catch (error) {
-                console.error('Failed to initialize Shopee Auto Publisher:', error);
-            }
-        }
-    };
+// // Initialize the auto publisher with proper timing (prevent duplicates)
+// if (window.location.href.includes('/portal/product/list/unpublished/draft') && window.location.href.includes('seller.shopee.') && !window.shopeeAutoPublisherInstance) {
+//     // Single initialization point
+//     const initializePublisher = () => {
+//         if (!window.shopeeAutoPublisherInstance) {
+//             try {
+//                 new ShopeeAutoPublisher();
+//             } catch (error) {
+//                 console.error('Failed to initialize Shopee Auto Publisher:', error);
+//             }
+//         }
+//     };
 
-    // Initialize after page is ready
-    if (document.readyState === 'complete') {
-        setTimeout(initializePublisher, 2000);
-    } else {
-        window.addEventListener('load', () => {
+//     // Initialize after page is ready
+//     if (document.readyState === 'complete') {
+//         setTimeout(initializePublisher, 2000);
+//     } else {
+//         window.addEventListener('load', () => {
+//             setTimeout(initializePublisher, 2000);
+//         });
+//     }
+// } 
+// Initialize the auto publisher with proper timing (prevent duplicates)
+(() => {
+    const url = window.location.href;
+
+    // Supported domains (regex-friendly pattern)
+    const supportedDomainsPattern = /https:\/\/(seller\.shopee\.(ph|com\.my|sg|co\.th|tw|com\.br|com)|banhang\.shopee\.vn)/;
+
+    const isDraftPage = url.includes('/portal/product/list/unpublished/draft');
+    const isSupportedDomain = supportedDomainsPattern.test(url);
+
+    if (isDraftPage && isSupportedDomain && !window.shopeeAutoPublisherInstance) {
+        const initializePublisher = () => {
+            if (!window.shopeeAutoPublisherInstance) {
+                try {
+                    new ShopeeAutoPublisher();
+                } catch (error) {
+                    console.error('Failed to initialize Shopee Auto Publisher:', error);
+                }
+            }
+        };
+
+        if (document.readyState === 'complete') {
             setTimeout(initializePublisher, 2000);
-        });
+        } else {
+            window.addEventListener('load', () => {
+                setTimeout(initializePublisher, 2000);
+            });
+        }
     }
-} 
+})();

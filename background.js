@@ -131,10 +131,12 @@ class BackgroundService {
     }
 
     handleTabUpdate(tabId, tab) {
-        // Check if we're on any Shopee seller domain
-        const isShopeeSellerDraft = /https:\/\/seller\.shopee\.[^\/]+\/portal\/product\/list\/unpublished\/draft/.test(tab.url);
-        const isShopeeSellerSite = /https:\/\/seller\.shopee\.[^\/]+/.test(tab.url);
+        // List of supported domains
+        const sellerDomainsPattern = '(seller\\.shopee\\.(ph|com\\.my|sg|co\\.th|tw|com\\.br|com)|banhang\\.shopee\\.vn)';
         
+        const isShopeeSellerDraft = new RegExp(`https://${sellerDomainsPattern}/portal/product/list/unpublished/draft`).test(tab.url);
+        const isShopeeSellerSite = new RegExp(`https://${sellerDomainsPattern}`).test(tab.url);
+    
         if (isShopeeSellerDraft) {
             // Set badge to indicate the extension is ready
             chrome.action.setBadgeText({
