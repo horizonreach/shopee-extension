@@ -410,6 +410,7 @@ class ShopeeAutoPublisher {
             'seller.shopee.co.th': 'en',  // Fixed: Thailand uses 'en' not 'en-th'
             'seller.shopee.tw': 'zh-tw',
             'seller.shopee.vn': 'en-vn',
+            'seller.shopee.com.br': 'pt-br',  // Brazil uses Portuguese
             'seller.shopee.com': 'en'
         };
         
@@ -425,6 +426,7 @@ class ShopeeAutoPublisher {
             'seller.shopee.co.th': 78021,   // Thailand - Fixed: uses 78021 not 48011
             'seller.shopee.tw': 48011,      // Taiwan (assuming similar to PH)
             'seller.shopee.vn': 48011,      // Vietnam (assuming similar to PH)
+            'seller.shopee.com.br': 48011,  // Brazil (using default channel)
             'seller.shopee.com': 48011      // Default
         };
         
@@ -440,6 +442,7 @@ class ShopeeAutoPublisher {
             'seller.shopee.co.th': "22",    // Thailand - Fixed: uses 22 not 50
             'seller.shopee.tw': "50",       // Taiwan
             'seller.shopee.vn': "50",       // Vietnam
+            'seller.shopee.com.br': "50",   // Brazil (using default price)
             'seller.shopee.com': "50"       // Default
         };
         
