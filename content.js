@@ -2,7 +2,11 @@ class ShopeeAutoPublisher {
     constructor() {
         // Prevent duplicate initialization
         if (window.shopeeAutoPublisherInstance) {
-            console.log('Shopee Auto Publisher already initialized');
+            console.log('Shopee Auto Publisher already initialized, stopping previous instance');
+            // Stop any existing instance first
+            if (window.shopeeAutoPublisherInstance.isRunning) {
+                window.shopeeAutoPublisherInstance.stopAutomation();
+            }
             return window.shopeeAutoPublisherInstance;
         }
 
@@ -15,6 +19,7 @@ class ShopeeAutoPublisher {
         this.capturedHeaders = {};
         this.isInitialized = false;
         this.currentDomain = this.extractDomainFromUrl(window.location.href);
+        this.abortController = null; // For cancelling API requests
         
         this.initializeEventListeners();
         this.loadState();
@@ -24,11 +29,46 @@ class ShopeeAutoPublisher {
         this.isInitialized = true;
         window.shopeeAutoPublisherInstance = this;
         console.log('Shopee Auto Publisher initialized successfully');
+        
+        // Add debug function to window for manual testing
+        window.shopeeDebug = {
+            getStatus: () => ({
+                isRunning: this.isRunning,
+                isInitialized: this.isInitialized,
+                stats: this.stats,
+                currentDomain: this.currentDomain,
+                hasAbortController: !!this.abortController,
+                hasDelayTimeout: !!this.currentDelayTimeout
+            }),
+            forceStop: () => {
+                console.log('Force stopping automation...');
+                this.stopAutomation();
+            },
+            checkFlags: () => {
+                console.log('Current flags:', {
+                    isRunning: this.isRunning,
+                    abortController: this.abortController ? 'exists' : 'null',
+                    delayTimeout: this.currentDelayTimeout ? 'exists' : 'null'
+                });
+            }
+        };
     }
 
     initializeEventListeners() {
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-            this.handleMessage(message);
+            console.log('Message listener triggered:', message);
+            try {
+                const result = this.handleMessage(message);
+                if (sendResponse) {
+                    sendResponse({ success: true, result });
+                }
+            } catch (error) {
+                console.error('Error handling message:', error);
+                if (sendResponse) {
+                    sendResponse({ success: false, error: error.message });
+                }
+            }
+            return true; // Keep message channel open
         });
     }
 
@@ -171,6 +211,8 @@ class ShopeeAutoPublisher {
     }
 
     handleMessage(message) {
+        console.log('Content script received message:', message);
+        
         switch (message.type) {
             case 'TOGGLE_AUTO_PUBLISH':
                 if (message.enabled) {
@@ -183,10 +225,14 @@ class ShopeeAutoPublisher {
                     }
                     this.startAutomation();
                 } else {
+                    console.log('Stopping automation due to toggle off');
                     this.stopAutomation();
                 }
                 break;
         }
+        
+        // Always return true to indicate message was handled
+        return true;
     }
 
     async startAutomation() {
@@ -381,10 +427,56 @@ class ShopeeAutoPublisher {
     }
 
     stopAutomation() {
+        console.log('stopAutomation called');
+        
+        // Set flag to false immediately
         this.isRunning = false;
-        this.sendLog('Automation stopped by user', 'info').catch(() => {});
-        this.updateStatus('Stopped', 0).catch(() => {});
-        chrome.storage.local.set({ autoPublishEnabled: false });
+        
+        // Abort any ongoing API requests
+        if (this.abortController) {
+            console.log('Aborting ongoing API requests');
+            this.abortController.abort();
+            this.abortController = null;
+        }
+        
+        // Clear any pending timeouts/intervals
+        if (this.automationTimeout) {
+            clearTimeout(this.automationTimeout);
+            this.automationTimeout = null;
+        }
+        
+        // Clear any running delays
+        if (this.currentDelayTimeout) {
+            clearTimeout(this.currentDelayTimeout);
+            this.currentDelayTimeout = null;
+        }
+        
+        // Update status immediately
+        this.updateStatus('🛑 Stopping...', 0).catch(() => {});
+        this.sendLog('🛑 Automation stopped by user', 'warning').catch(() => {});
+        
+        // Update storage
+        chrome.storage.local.set({ autoPublishEnabled: false }).catch(() => {});
+        
+        // Send completion message to update UI
+        setTimeout(() => {
+            try {
+                chrome.runtime.sendMessage({
+                    type: 'COMPLETION',
+                    data: { 
+                        message: 'Automation stopped by user',
+                        processed: this.stats.processed,
+                        published: this.stats.published,
+                        errors: this.stats.errors
+                    }
+                });
+            } catch (error) {
+                console.warn('Could not send completion message:', error);
+            }
+            
+            // Final status update
+            this.updateStatus('Stopped by user', 0).catch(() => {});
+        }, 100);
     }
 
     extractDomainFromUrl(url) {
@@ -450,6 +542,14 @@ class ShopeeAutoPublisher {
     }
 
     async runAutomationFlow() {
+        console.log('runAutomationFlow started, isRunning:', this.isRunning);
+        
+        // Check if stopped before starting
+        if (!this.isRunning) {
+            console.log('Automation stopped before starting flow');
+            return;
+        }
+        
         let allQualifiedProducts = [];
         let currentPage = 1;
         let hasMorePages = true;
@@ -458,6 +558,11 @@ class ShopeeAutoPublisher {
         this.sendLog('Fetching draft products...', 'info').catch(() => {});
         
         while (hasMorePages && this.isRunning) {
+            // Check if stopped at the beginning of each page
+            if (!this.isRunning) {
+                this.sendLog('Automation stopped by user', 'info').catch(() => {});
+                return;
+            }
             try {
                 const draftResponse = await this.getDraftProducts(currentPage);
                 
@@ -534,8 +639,20 @@ class ShopeeAutoPublisher {
         for (let i = 0; i < allQualifiedProducts.length && this.isRunning; i++) {
             const product = allQualifiedProducts[i];
             
+            // Check if stopped at the beginning of each product
+            if (!this.isRunning) {
+                this.sendLog('Automation stopped by user', 'info').catch(() => {});
+                return;
+            }
+            
             try {
                 this.sendLog(`Processing: ${product.name}`, 'info').catch(() => {});
+                
+                // Check if stopped before getting product info
+                if (!this.isRunning) {
+                    this.sendLog('Automation stopped by user', 'info').catch(() => {});
+                    return;
+                }
                 
                 // Get detailed product info
                 const productInfo = await this.getProductInfo(product.id);
@@ -544,12 +661,24 @@ class ShopeeAutoPublisher {
                     throw new Error(`Failed to get product info: ${productInfo.message}`);
                 }
 
+                // Check if stopped before publishing
+                if (!this.isRunning) {
+                    this.sendLog('Automation stopped by user', 'info').catch(() => {});
+                    return;
+                }
+                
                 // Publish the product with retry logic
                 let publishSuccess = false;
                 let retryCount = 0;
                 const maxRetries = 3;
                 
-                while (!publishSuccess && retryCount < maxRetries) {
+                while (!publishSuccess && retryCount < maxRetries && this.isRunning) {
+                    // Check if stopped at the beginning of each retry
+                    if (!this.isRunning) {
+                        this.sendLog('Automation stopped by user', 'info').catch(() => {});
+                        return;
+                    }
+                    
                     try {
                         const publishResult = await this.publishProduct(productInfo.data.product_info);
                         
@@ -605,6 +734,12 @@ class ShopeeAutoPublisher {
                                 const backoffTime = 30000 * retryCount + (Math.random() * 10000); // 30s, 60s, 90s + random
                                 this.sendLog(`Rate limited, waiting ${Math.round(backoffTime/1000)}s before retry ${retryCount}/${maxRetries}...`, 'warning').catch(() => {});
                                 await this.delay(backoffTime);
+                                
+                                // Check if stopped after backoff delay
+                                if (!this.isRunning) {
+                                    this.sendLog('Automation stopped by user during backoff', 'info').catch(() => {});
+                                    return;
+                                }
                             } else {
                                 throw publishError;
                             }
@@ -615,8 +750,20 @@ class ShopeeAutoPublisher {
                 }
                 
             } catch (error) {
+                // Check if error is due to user stopping automation
+                if (error.message.includes('stopped by user') || error.name === 'AbortError') {
+                    this.sendLog('🛑 Automation stopped by user during product processing', 'warning').catch(() => {});
+                    return;
+                }
+                
                 this.sendLog(`Failed to publish ${product.name}: ${error.message}`, 'error').catch(() => {});
                 this.stats.errors++;
+                
+                // Check if stopped after error
+                if (!this.isRunning) {
+                    this.sendLog('Automation stopped by user', 'info').catch(() => {});
+                    return;
+                }
             }
             
             this.stats.processed++;
@@ -628,6 +775,12 @@ class ShopeeAutoPublisher {
             
             // Much longer delay between product publishing to avoid rate limiting
             await this.delay(5000); // 10-15 seconds random delay
+            
+            // Check if stopped after delay
+            if (!this.isRunning) {
+                this.sendLog('Automation stopped by user', 'info').catch(() => {});
+                return;
+            }
         }
 
         this.completeAutomation();
@@ -839,6 +992,12 @@ class ShopeeAutoPublisher {
     }
 
     async makeAPIRequest(url, method, data = null) {
+        // Check if stopped before making request
+        if (!this.isRunning) {
+            console.log('API request cancelled - automation stopped');
+            throw new Error('Automation stopped by user');
+        }
+        
         // Build complete headers with all necessary security tokens
         const headers = {
             'accept': 'application/json, text/plain, */*',
@@ -881,6 +1040,10 @@ class ShopeeAutoPublisher {
         }
 
         try {
+            // Create abort controller for this request
+            this.abortController = new AbortController();
+            options.signal = this.abortController.signal;
+            
             // Log request details for debugging
             console.log(`API ${method} request to:`, url);
             console.log('Request headers:', headers);
@@ -949,9 +1112,20 @@ class ShopeeAutoPublisher {
         } catch (error) {
             console.error(`API ${method} error:`, error);
             
+            // Handle abort error (user stopped automation)
+            if (error.name === 'AbortError') {
+                console.log('API request aborted by user');
+                throw new Error('Automation stopped by user');
+            }
+            
+            // Don't add delay if automation is stopped
+            if (!this.isRunning) {
+                throw new Error('Automation stopped by user');
+            }
+            
             // Add extra delay after any error to prevent rapid retries
             if (error.message.includes('Rate limited') || error.message.includes('429') || error.message.includes('403')) {
-                await this.delay(5000); // Wait 20 seconds after rate limit error
+                await this.delay(5000); // Wait 5 seconds after rate limit error
             } else {
                 await this.delay(2000); // Wait 2 seconds after any other error
             }
@@ -1131,7 +1305,41 @@ class ShopeeAutoPublisher {
     }
 
     delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
+        return new Promise((resolve, reject) => {
+            if (!this.isRunning) {
+                resolve(); // Exit immediately if already stopped
+                return;
+            }
+            
+            const startTime = Date.now();
+            const checkInterval = Math.min(100, ms); // Check every 100ms or less
+            let timeoutId;
+            
+            const checkAndDelay = () => {
+                if (!this.isRunning) {
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                    }
+                    console.log('Delay interrupted by stop signal');
+                    resolve(); // Exit early if stopped
+                    return;
+                }
+                
+                const elapsed = Date.now() - startTime;
+                if (elapsed >= ms) {
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                    }
+                    resolve();
+                } else {
+                    const nextDelay = Math.min(checkInterval, ms - elapsed);
+                    timeoutId = setTimeout(checkAndDelay, nextDelay);
+                    this.currentDelayTimeout = timeoutId; // Store for potential cancellation
+                }
+            };
+            
+            checkAndDelay();
+        });
     }
 
     async updateStatus(text, progress) {

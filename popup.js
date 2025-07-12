@@ -113,20 +113,57 @@ class PopupController {
                 }, 3000); // Wait 3 seconds for page to fully load
                 
             } else {
-                this.addLog('自動出品を停止しました', 'info');
-                this.updateProgress({ text: '停止済み', progress: 0 });
+                this.addLog('🛑 自動出品を停止しています...', 'warning');
+                this.updateProgress({ text: '停止中...', progress: 0 });
                 
                 // Send message to any Shopee tabs to stop automation
-                const tabs = await chrome.tabs.query({ url: 'https://seller.shopee.*/*' });
-                for (const tab of tabs) {
-                    try {
-                        await chrome.tabs.sendMessage(tab.id, {
-                            type: 'TOGGLE_AUTO_PUBLISH',
-                            enabled: false
-                        });
-                    } catch (error) {
-                        // Ignore errors for tabs that don't have content script
+                let messagesSent = 0;
+                
+                try {
+                    // Get all tabs and filter manually for better control
+                    const allTabs = await chrome.tabs.query({});
+                    const shopeePatterns = [
+                        /https:\/\/seller\.shopee\.(ph|com\.my|sg|co\.th|tw|com\.br|com)/,
+                        /https:\/\/banhang\.shopee\.vn/
+                    ];
+                    
+                    const shopeeTabs = allTabs.filter(tab => {
+                        if (!tab.url) return false;
+                        return shopeePatterns.some(pattern => pattern.test(tab.url));
+                    });
+                    
+                    console.log('Found Shopee tabs:', shopeeTabs.map(tab => ({ id: tab.id, url: tab.url })));
+                    this.addLog(`検出されたShopeeタブ: ${shopeeTabs.length}個`, 'info');
+                    
+                    for (const tab of shopeeTabs) {
+                        try {
+                            const response = await chrome.tabs.sendMessage(tab.id, {
+                                type: 'TOGGLE_AUTO_PUBLISH',
+                                enabled: false
+                            });
+                            
+                            console.log(`Stop message sent to tab ${tab.id}:`, response);
+                            this.addLog(`停止メッセージを送信しました: ${tab.url}`, 'info');
+                            messagesSent++;
+                        } catch (error) {
+                            console.warn(`Could not send stop message to tab ${tab.id}:`, error);
+                            this.addLog(`タブ ${tab.id} への送信に失敗: ${error.message}`, 'warning');
+                        }
                     }
+                } catch (error) {
+                    console.error('Error querying tabs:', error);
+                    this.addLog(`タブ検索エラー: ${error.message}`, 'error');
+                }
+                
+                if (messagesSent === 0) {
+                    this.addLog('⚠️ 実行中のタブが見つかりませんでした', 'warning');
+                    this.updateProgress({ text: '停止済み', progress: 0 });
+                } else {
+                    this.addLog(`${messagesSent}個のタブに停止メッセージを送信しました`, 'info');
+                    // Wait a bit for the stop message to be processed
+                    setTimeout(() => {
+                        this.updateProgress({ text: '停止済み', progress: 0 });
+                    }, 1000);
                 }
             }
         } catch (error) {
@@ -249,14 +286,22 @@ class PopupController {
         this.updateStatus('completed');
         this.toggle.checked = false;
         
-        const message = `処理が完了しました！\n\n処理済み: ${data.processed}\n出品済み: ${data.published}\nエラー: ${data.errors}`;
+        let message;
+        if (data.message && data.message.includes('stopped by user')) {
+            message = `自動出品を停止しました\n\n処理済み: ${data.processed}\n出品済み: ${data.published}\nエラー: ${data.errors}`;
+        } else {
+            message = `処理が完了しました！\n\n処理済み: ${data.processed}\n出品済み: ${data.published}\nエラー: ${data.errors}`;
+        }
+        
         this.completionMessage.textContent = message;
         this.modal.style.display = 'block';
         
-        // Auto-close modal after 5 seconds
-        setTimeout(() => {
-            this.closeModal();
-        }, 5000);
+        // Auto-close modal after 5 seconds (only if not stopped by user)
+        if (!data.message || !data.message.includes('stopped by user')) {
+            setTimeout(() => {
+                this.closeModal();
+            }, 5000);
+        }
     }
 
     closeModal() {
